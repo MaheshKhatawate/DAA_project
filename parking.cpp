@@ -1,6 +1,5 @@
 #include <bits/stdc++.h>
 using namespace std;
-//g++ -std=c++17 parking.cpp -o parking(is to compile the code in the latest version)
 
 //This the definition of the structure
 struct node{
@@ -112,3 +111,10 @@ int main(){
         }
     }
 }
+/*
+    TO RUN THE CODE
+first execute the below command in termianl
+    g++ -std=c++17 parking.cpp -o parking
+then
+    ./parking
+*/
