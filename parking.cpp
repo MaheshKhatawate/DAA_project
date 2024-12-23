@@ -50,6 +50,60 @@ class CityGraph{
                 cout<<endl<<endl;
             }
         }
+
+        //this is the function where used to find the nearest parking spot
+        //Here we are using DIJKSTRA'S algorithm as we are using priority queue
+        //That is using min-heap 
+        //time complexity of algorithm is O(V+ElogE) 
+        //where V is number of nodes and E number of edges
+        void findNearestParking(const string& currentLocation,bool searchCarSpot){
+            // here we check whether the given currentLocation is in the city or not
+            if(nodes.find(currentLocation)==nodes.end()){
+                cout<<"The current location does not exist in the city\n";
+                return;
+            }
+
+            //Priority queue for dijkstra's algorithm :{distance, place}
+            priority_queue<pair<int, string>, vector<pair<int, string>>, greater<>> pq;
+            unordered_map<string, int> distances;
+            unordered_map<string, bool> visited;
+
+            //Initialize distance
+            for(const auto& node:nodes){
+                distances[node.first]=INT_MAX;
+            }
+            distances[currentLocation]=0;
+            pq.push({0,currentLocation});
+
+            while(!pq.empty()){
+                auto [currentDist,currentPlace]=pq.top();
+                pq.pop();
+
+                if(visited[currentPlace]) continue;
+                visited[currentPlace]=true;
+
+                //checking if currentPlace has parking spots available
+                if(nodes[currentPlace].hasParking){
+                    if(searchCarSpot && nodes[currentPlace].carSpots>0){
+                        cout <<"Nearest car parking found at: " << currentPlace <<" (Distance: " << currentDist << ")\n";
+                        return;
+                    }
+
+                    if(!searchCarSpot && nodes[currentPlace].bikeSpots>0){
+                        cout<<"Nearest bike parking found at: "<<currentPlace<<" (Distance: "<<currentDist<<")\n";
+                        return;
+                    }
+                }
+
+                for(const auto&[neighbor, distance]:adjList[currentPlace]){
+                    if(!visited[neighbor]&&distances[neighbor]>currentDist+distance){
+                        distances[neighbor]=currentDist+distance;
+                        pq.push({distances[neighbor],neighbor});
+                    }
+                }
+            }
+            cout<<"No parking slot is available from the current location.\n";
+        }
 };
 
 int main(){
@@ -59,7 +113,8 @@ int main(){
         cout<<"1-Add Place\n";
         cout<<"2-Connect Places\n";
         cout<<"3-Display city\n";
-        cout<<"4-Exit\n";
+        cout<<"4-Find the nearest parking spot\n";
+        cout<<"5-Exit\n";
         cout<<"Enter your choice:";
         cin>>choice;
 
@@ -104,6 +159,17 @@ int main(){
                 break;
             }
             case 4:{
+                string currentLocation;
+                bool searchCarSpot;
+                cin.ignore();
+                cout<<"Enter the currentLocation:";
+                getline(cin,currentLocation);
+                cout<<"Are you looking for the car spot or bike spot?(1 for car and 0 for bike):";
+                cin>>searchCarSpot;
+                city.findNearestParking(currentLocation,searchCarSpot);
+                break;
+            }
+            case 5:{
                 cout<<"Exiting the program...\n";
                 return 0;
             }
