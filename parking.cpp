@@ -238,6 +238,13 @@ class CityGraph{
         }
 };
 
+//Function to check whether the user has enter correct valid bool value
+bool check_bool(bool test){
+            if(test==1||test==0)
+                return test;
+            return 1;
+        }
+
 int main(){
     CityGraph city;
     int choice;
@@ -263,6 +270,7 @@ int main(){
                 getline(cin, name);
                 cout<<"Does this place have parking?(1 for Yes and 0 for No):";
                 cin>>hasParking;
+                hasParking=check_bool(hasParking);
                 if(hasParking){
                     cout<<"Enter the number of car spots:";
                     cin>>carSpots;
@@ -300,6 +308,7 @@ int main(){
                 getline(cin,currentLocation);
                 cout<<"Are you looking for the car spot or bike spot?(1 for car and 0 for bike):";
                 cin>>searchCarSpot;
+                searchCarSpot=check_bool(searchCarSpot);
                 city.findNearestParking(currentLocation,searchCarSpot);
                 break;
             }
@@ -323,8 +332,10 @@ int main(){
                 getline(cin,place);
                 cout<<"Car spot or Bike spot?(1 for car, 0 for bike):";
                 cin>>isCarSpot;
+                isCarSpot=check_bool(isCarSpot);
                 cout<<"Block or unblock?(1 from block, 0 for unblock):";
                 cin>>block;
+                block=check_bool(block);
                 city.blockUnblockParkingSpot(user,place,isCarSpot,block);
                 break;
             }
