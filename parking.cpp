@@ -3,6 +3,7 @@ MODULES USED
 1.DIJKSTRA'S algorithm (to find the nearest parking spot)
 2.WARSHALL'S algorithm (to check whether path exist between two points)
 3.BFS for displaying the city
+4.INSERTION SORT, to display the places based on the remaining parking spots
  */
 #include <bits/stdc++.h>
 #include <iostream>
@@ -281,14 +282,49 @@ class CityGraph{
                 }
             }
         }
+
+        //function to sort the cities based on the remaining parking spots using insertion sort
+        void sortCitiesByParking(){
+            vector<pair<string, int>> parkingData;
+
+            for(const auto& [place,node]:nodes){
+                if(node.hasParking){
+                    int remainingSpots=(node.carSpots-node.blockedCarSpots)+(node.bikeSpots-node.blockedBikeSpots);
+                    parkingData.emplace_back(place, remainingSpots);
+                }
+                else{
+                    parkingData.emplace_back(place,0);
+                }
+            }
+
+            for(int i=1;i<parkingData.size();i++){
+                auto key = parkingData[i];
+                int j=i-1;
+
+                while(j>=0&&parkingData[j].second<key.second){
+                    parkingData[j+1]=parkingData[j];
+                    --j;
+                }
+                parkingData[j+1]=key;
+            }
+
+            cout<<"Cities sorted by remaining parking spots.\n";
+            for(const auto&[city,spots]: parkingData){
+                cout<<"City: "<<city<<" | Remaining parking spots: "<<spots<<endl;
+            }
+        }
 };
 
 //Function to check whether the user has enter correct valid bool value
-bool check_bool(bool test){
-            if(test==1||test==0)
-                return test;
-            return 1;
-        }
+bool getBooleanInput(string input1, string input2) {
+    int input;
+    cin >> input;
+    while (input != 0 && input != 1) {
+        cout << "Invalid input! Please enter 1 for "<<input1<<" or 0 for "<<input2<<": ";
+        cin >> input;
+    }
+    return input == 1;
+}
 
 int main(){
     CityGraph city;
@@ -301,7 +337,8 @@ int main(){
         cout<<"5-Find the nearest parking spot\n";
         cout<<"6-Check if path exist between two places.\n";
         cout<<"7-Block or unblock a parking spot.\n";
-        cout<<"8-Exit\n";
+        cout<<"8-Sort cities by remaining parking spot.\n";
+        cout<<"9-Exit\n";
         cout<<"Enter your choice:";
         cin>>choice;
 
@@ -315,8 +352,7 @@ int main(){
                             //input of string to handle the spaces
                 getline(cin, name);
                 cout<<"Does this place have parking?(1 for Yes and 0 for No):";
-                cin>>hasParking;
-                hasParking=check_bool(hasParking);
+                hasParking=getBooleanInput("Yes","No");
                 if(hasParking){
                     cout<<"Enter the number of car spots:";
                     cin>>carSpots;
@@ -361,8 +397,7 @@ int main(){
                 cout<<"Enter the currentLocation:";
                 getline(cin,currentLocation);
                 cout<<"Are you looking for the car spot or bike spot?(1 for car and 0 for bike):";
-                cin>>searchCarSpot;
-                searchCarSpot=check_bool(searchCarSpot);
+                searchCarSpot=getBooleanInput("car","bike");
                 city.findNearestParking(currentLocation,searchCarSpot);
                 break;
             }
@@ -385,15 +420,17 @@ int main(){
                 cout<<"Enter the place name:";
                 getline(cin,place);
                 cout<<"Car spot or Bike spot?(1 for car, 0 for bike):";
-                cin>>isCarSpot;
-                isCarSpot=check_bool(isCarSpot);
+                isCarSpot=getBooleanInput("car","bike");
                 cout<<"Block or unblock?(1 from block, 0 for unblock):";
-                cin>>block;
-                block=check_bool(block);
+                block=getBooleanInput("block","unblock");
                 city.blockUnblockParkingSpot(user,place,isCarSpot,block);
                 break;
             }
             case 8:{
+                city.sortCitiesByParking();
+                break;
+            }
+            case 9:{
                 cout<<"Exiting the program...\n";
                 return 0;
             }
