@@ -1,3 +1,9 @@
+/*
+MODULES USED
+1.DIJKSTRA'S algorithm (to find the nearest parking spot)
+2.WARSHALL'S algorithm (to check whether path exist between two points)
+3.BFS for displaying the city
+ */
 #include <bits/stdc++.h>
 #include <iostream>
 using namespace std;
@@ -82,6 +88,45 @@ class CityGraph{
                 }
                 cout<<endl<<endl;
             }
+        }
+
+        //Display city using BFS
+        void displayCityBFS(const string &startCity){
+            if(nodes.find(startCity)==nodes.end()){
+                cout<<"The starting city does not exist in the graph.\n";
+                return;
+            }
+
+            unordered_map<string, bool> visited;
+            queue<string> q;
+
+            //start BFS from the given city
+            q.push(startCity);
+            visited[startCity]=true;
+
+            cout<<"Cities in BFS order starting from "<<startCity<<":.\n";
+            while(!q.empty()){
+                string currentCity=q.front();
+                q.pop();
+                
+                NODE& cityData = nodes[currentCity];
+                cout<<"City: "<<currentCity;
+                if(cityData.hasParking){
+                    cout<<"(Parking: Yes, Remaining Car Spots: )"<<cityData.carSpots-cityData.blockedCarSpots<< ", Remaining Bike Spots: " << cityData.bikeSpots - cityData.blockedBikeSpots << ")";
+                }
+                else{
+                    cout << " (Parking: No)";
+                }
+                cout<<"\n";
+
+                for(const auto& neighbor : adjList[currentCity]){
+                    if(!visited[neighbor.first]){
+                        visited[neighbor.first]=true;
+                        q.push(neighbor.first);
+                    }
+                }
+            }
+            cout<<endl;
         }
 
         //this is the function where used to find the nearest parking spot
@@ -252,10 +297,11 @@ int main(){
         cout<<"\n1-Add Place\n";
         cout<<"2-Connect Places\n";
         cout<<"3-Display city\n";
-        cout<<"4-Find the nearest parking spot\n";
-        cout<<"5-Check if path exist between two places.\n";
-        cout<<"6-Block or unblock a parking spot.\n";
-        cout<<"7-Exit\n";
+        cout<<"4-BFS traversal from any starting place.\n";
+        cout<<"5-Find the nearest parking spot\n";
+        cout<<"6-Check if path exist between two places.\n";
+        cout<<"7-Block or unblock a parking spot.\n";
+        cout<<"8-Exit\n";
         cout<<"Enter your choice:";
         cin>>choice;
 
@@ -301,6 +347,14 @@ int main(){
                 break;
             }
             case 4:{
+                string startCity;
+                cin.ignore();
+                cout<<"Enter the start city:";
+                getline(cin,startCity);
+                city.displayCityBFS(startCity);
+                break;
+            }
+            case 5:{
                 string currentLocation;
                 bool searchCarSpot;
                 cin.ignore();
@@ -312,7 +366,7 @@ int main(){
                 city.findNearestParking(currentLocation,searchCarSpot);
                 break;
             }
-            case 5:{
+            case 6:{
                 string place1,place2;
                 cin.ignore();
                 cout<<"Enter the first place:";
@@ -322,7 +376,7 @@ int main(){
                 city.checkPathExistence(place1,place2);
                 break;
             }
-            case 6:{
+            case 7:{
                 string user,place;
                 bool isCarSpot, block;
                 cin.ignore();
@@ -339,7 +393,7 @@ int main(){
                 city.blockUnblockParkingSpot(user,place,isCarSpot,block);
                 break;
             }
-            case 7:{
+            case 8:{
                 cout<<"Exiting the program...\n";
                 return 0;
             }
