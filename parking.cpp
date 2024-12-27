@@ -4,6 +4,8 @@ MODULES USED
 2.WARSHALL'S algorithm (to check whether path exist between two points)
 3.BFS for displaying the city
 4.INSERTION SORT, to display the places based on the remaining parking spots
+5.KMP search
+6.FLOYD'S, to display the shortest path between all the points
  */
 #include <bits/stdc++.h>
 #include <iostream>
@@ -64,8 +66,8 @@ class CityGraph{
             //Update adjacency matrix
             int idx1=getIndex(place1);
             int idx2=getIndex(place2);
-            adjMatrix[idx1][idx2]=1;
-            adjMatrix[idx2][idx1]=1;
+            adjMatrix[idx1][idx2]=distance;
+            adjMatrix[idx2][idx1]=distance;
         }
 
         //function to display the details of the city 
@@ -313,6 +315,109 @@ class CityGraph{
                 cout<<"City: "<<city<<" | Remaining parking spots: "<<spots<<endl;
             }
         }
+
+        //KMP 
+        void KMPsearch(const string& pattern, const string& text){
+            int m=pattern.size();
+            int n=text.size();
+
+            vector<int> lps(m,0);
+
+            //LPS table creation
+            int len,i;
+            len=0;
+            i=1;
+            while(i<m){
+                if(pattern[i]==pattern[len]){
+                    len++;
+                    lps[i]=len;
+                    i++;
+                }
+                else{
+                    if(len!=0){
+                        len=lps[len-1];
+                    }
+                    else{
+                        lps[i]=0;
+                        i++;
+                    }
+                }
+            }
+
+            i=0;
+            int j=0;
+            bool found=false;
+            while(i<n){
+                if(pattern[j]==text[i]){
+                    i++;
+                    j++;
+                }
+
+                if(j==m){
+                    cout<<"Found \""<<pattern<<"\" at index "<<i-j<<" in: \""<<text<<"\"\n";
+                    j=lps[j-1];
+                    found=true; 
+                }
+                else if(i<n && pattern[j]!=text[i]){
+                    if(j!=0)
+                        j=lps[j-1];
+                    else
+                        i++;
+                }
+            }
+
+            if(!found){
+                cout<<"\""<<pattern<<"\" not found in: \""<<text<<"\"\n";
+            }
+        }
+
+        void searchCityName(const string& cityName){
+            cout<<"Searching for \""<<cityName<<"\" in description\n";  
+
+            for(const auto&[place,node]:nodes){
+                KMPsearch(cityName,place);
+            }
+        }
+
+        //function to display the shortest path between all the points using Floyd's algorithm
+        void floydWarshall(){
+            int n=places.size();
+
+            vector<vector<int>> dist(n,vector<int>(n,INT_MAX));
+
+            for(int i=0;i<n;i++){
+                dist[i][i]=0;
+            }
+
+            for(int i=0;i<n;i++){
+                for(int j=0;j<n;j++){
+                    if(adjMatrix[i][j]!=0){
+                        dist[i][j]=adjMatrix[i][j];
+                    }
+                }
+            }
+
+            for(int k=0;k<n;k++){
+                for(int i=0;i<n;i++){
+                    for(int j=0;j<n;j++){
+                        if(dist[i][k]!=INT_MAX && dist[k][j]!=INT_MAX){
+                            dist[i][j]=min(dist[i][j],dist[i][k]+dist[k][j]);
+                        }
+                    }
+                }
+            }
+
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    if (dist[i][j] == INT_MAX) {
+                        cout << "No path from " << places[i] << " to " << places[j] << endl;
+                    } else {
+                        cout << "Shortest distance from " << places[i] << " to " << places[j] << " is " << dist[i][j] << " km" << endl;
+                    }
+                }
+            }
+        }
+
 };
 
 //Function to check whether the user has enter correct valid bool value
@@ -338,7 +443,9 @@ int main(){
         cout<<"6-Check if path exist between two places.\n";
         cout<<"7-Block or unblock a parking spot.\n";
         cout<<"8-Sort cities by remaining parking spot.\n";
-        cout<<"9-Exit\n";
+        cout<<"9-Search for a city name in descriptions or routes.\n";
+        cout<<"10-Display shortest path between all the points.\n";
+        cout<<"11-Exit\n";
         cout<<"Enter your choice:";
         cin>>choice;
 
@@ -431,6 +538,18 @@ int main(){
                 break;
             }
             case 9:{
+                string cityName;
+                cin.ignore();
+                cout<<"Enter the city name to search:";
+                getline(cin,cityName);
+                city.searchCityName(cityName);
+                break;
+            }
+            case 10:{
+                city.floydWarshall();
+                break;
+            }
+            case 11:{
                 cout<<"Exiting the program...\n";
                 return 0;
             }
