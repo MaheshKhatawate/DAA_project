@@ -6,10 +6,91 @@ MODULES USED
 4.INSERTION SORT, to display the places based on the remaining parking spots
 5.KMP search
 6.FLOYD'S, to display the shortest path between all the points
+7.KRUSKAL'S, to generate the minimum spanning tree
+8.Linear search
  */
+
+
+/*
+    TO RUN THE CODE
+first execute the below command in termianl
+    g++ -std=c++17 parking.cpp -o parking
+then
+    ./parking
+*/
+
+
+
 #include <bits/stdc++.h>
 #include <iostream>
 using namespace std;
+
+
+// Union-Find (Disjoint Set Union) data structure
+class DSU 
+{
+    unordered_map<string, string> parent;
+    unordered_map<string, int> rank;
+    
+
+
+public:
+    // Find the root of the element
+    string find(string u) 
+    {
+        if (parent[u] != u) 
+        {
+            parent[u] = find(parent[u]); // Path compression
+        }
+        return parent[u];
+    }
+
+
+    // Union by rank to ensure that the tree remains flat
+    void unionSets(string u, string v) 
+    {
+        string rootU = find(u);
+        string rootV = find(v);
+        
+
+
+        if (rootU != rootV) 
+        {
+            if (rank[rootU] > rank[rootV]) 
+            {
+                parent[rootV] = rootU;
+            } 
+            else if (rank[rootU] < rank[rootV]) 
+            {
+                parent[rootU] = rootV;
+            } 
+            else 
+            {
+                parent[rootV] = rootU;
+                rank[rootU]++;
+            }
+        }
+    }
+
+
+
+    // Initialize a node
+    void makeSet(string u) 
+    {
+        parent[u] = u;
+        rank[u] = 0;
+    }
+};
+
+
+
+struct Edge 
+{
+    string u, v;
+    int weight;
+};
+
+
 
 //This the definition of the structure
 struct node
@@ -20,8 +101,11 @@ struct node
     int bikeSpots;
     int blockedCarSpots; 
     int blockedBikeSpots; 
+    int blockCount;
 };
 typedef node NODE;
+
+
 
 class CityGraph
 {
@@ -31,18 +115,28 @@ class CityGraph
     vector<string> places;
     unordered_map<string ,string> userBlockedSpot;//maps users to place they blocked
 
+
     void resizeMatrix()
     {
         int n=places.size();
         adjMatrix.resize(n, vector<int>(n,0));
     }
 
+
     int getIndex(const string& place)
     {
-        return find(places.begin(),places.end(), place)-places.begin();
+        auto it = find(places.begin(), places.end(), place);
+        if (it != places.end()) 
+        {
+            return distance(places.begin(), it);
+        }
+        return -1; // Return -1 if not found
     }
 
+
     public:
+
+
         //function to add places
         void addPlace(string name, bool hasParking, int carSpots, int bikeSpots)
         {
@@ -57,6 +151,69 @@ class CityGraph
                 cout<<"Place already exists.\n";
             }
         }
+
+
+        //This function helps in deletion of the node 
+        void deleteCity(const string& cityName)
+        {
+            if(nodes.find(cityName)==nodes.end())
+            {
+                //check whether the city exist or not
+                cout<<"City doesnot exists.\n";
+                return;
+            }
+
+
+            //Remove for adjacency list 
+            adjList.erase(cityName);//remove all connection of the city
+            for(auto& pair:adjList)
+            {
+                pair.second.erase(cityName); //remove the city from other connections
+            }
+
+
+            //remove from ajacency matrix
+            int idx=getIndex(cityName);
+            if(idx<places.size())
+            {
+                //remove the row
+                adjMatrix.erase(adjMatrix.begin()+idx);
+
+                //remove the column corresponding to the city
+                for(auto& row:adjMatrix)
+                {
+                    if(idx<row.size())
+                    {
+                        row.erase(row.begin()+idx);
+                    }
+                    else
+                    {
+                        cout << "Error: Invalid column access during deletion." << endl;
+                    }
+                    
+                }
+            }
+
+            places.erase(places.begin()+idx);
+
+            nodes.erase(cityName);
+
+
+            //remove the places vector
+            for(auto it = userBlockedSpot.begin();it!=userBlockedSpot.end();)
+            {
+                if(it->second==cityName)
+                {
+                    it=userBlockedSpot.erase(it);
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+            cout << "City " << cityName << " and its connections have been successfully deleted.\n";
+        }
+
 
         //function to add connection between the places
         //This is not yet perfect
@@ -78,6 +235,7 @@ class CityGraph
             adjMatrix[idx1][idx2]=distance;
             adjMatrix[idx2][idx1]=distance;
         }
+
 
         //function to display the details of the city 
         void displayCity()
@@ -108,6 +266,7 @@ class CityGraph
                 cout<<endl<<endl;
             }
         }
+
 
         //Display city using BFS
         void displayCityBFS(const string &startCity)
@@ -153,6 +312,8 @@ class CityGraph
             }
             cout<<endl;
         }
+
+
 
         //this is the function where used to find the nearest parking spot
         //Here we are using DIJKSTRA'S algorithm as we are using priority queue
@@ -217,6 +378,8 @@ class CityGraph
             cout<<"No parking slot is available from the current location.\n";
         }
 
+
+
         //function to check whether the path exist between two points
         void checkPathExistence(const string& place1,const string& place2)
         {
@@ -252,6 +415,8 @@ class CityGraph
             }
         }
 
+
+
         //function to block and unblock the parking spot
         void blockUnblockParkingSpot(const string &user,const string &place, bool isCarSpot, bool block)
         {
@@ -283,6 +448,7 @@ class CityGraph
                     {
                         node.blockedCarSpots++;
                         userBlockedSpot[user]=place;
+                        node.blockCount++;
                         cout<<"Car parking spot blocked at "<<place<<" by user "<<user<<".\n";
                     }
                     else
@@ -296,6 +462,7 @@ class CityGraph
                     {
                         node.blockedBikeSpots++;
                         userBlockedSpot[user]=place;
+                        node.blockCount++;
                         cout<<"Bike parking spot blocked at "<<place<<" by user "<<user<<".\n";
                     }
                     else
@@ -342,6 +509,8 @@ class CityGraph
             }
         }
 
+
+
         //function to sort the cities based on the remaining parking spots using insertion sort
         void sortCitiesByParking()
         {
@@ -379,6 +548,8 @@ class CityGraph
                 cout<<"City: "<<city<<" | Remaining parking spots: "<<spots<<endl;
             }
         }
+
+
 
         //KMP 
         void KMPsearch(const string& pattern, const string& text)
@@ -451,6 +622,8 @@ class CityGraph
             }
         }
 
+
+
         void searchCityName(const string& cityName)
         {
             cout<<"Searching for \""<<cityName<<"\" in description\n";  
@@ -460,6 +633,8 @@ class CityGraph
                 KMPsearch(cityName,place);
             }
         }
+
+
 
         //function to display the shortest path between all the points using Floyd's algorithm
         void floydWarshall()
@@ -514,7 +689,90 @@ class CityGraph
             }
         }
 
+
+        void kruskalMST() 
+        {
+        vector<Edge> edges;
+
+        // Prepare the edges from the adjacency list
+        for (const auto& node : adjList) 
+        {
+            for (const auto& neighbor : node.second) 
+            {
+                if (node.first < neighbor.first) 
+                {  // To avoid duplicate edges
+                    edges.push_back({node.first, neighbor.first, neighbor.second});
+                }
+            }
+        }
+
+        // Sort the edges based on weight (distance)
+        sort(edges.begin(), edges.end(), [](const Edge& a, const Edge& b) 
+        {
+            return a.weight < b.weight;
+        });
+
+        // Initialize DSU (Union-Find)
+        DSU dsu;
+        for (const auto& node : nodes) 
+        {
+            dsu.makeSet(node.first); // Make set for each node
+        }
+
+        vector<Edge> mst;  // Resultant MST
+
+        // Process edges in sorted order
+        for (const Edge& edge : edges) 
+        {
+            string u = edge.u;
+            string v = edge.v;
+
+            // If u and v are not connected, include this edge in the MST
+            if (dsu.find(u) != dsu.find(v)) 
+            {
+                dsu.unionSets(u, v);
+                mst.push_back(edge);  // Add to MST
+            }
+        }
+
+        // Print the MST
+        cout << "Minimum Spanning Tree (MST) using Kruskal's Algorithm:" << endl;
+        for (const Edge& edge : mst) 
+        {
+            cout << edge.u << " - " << edge.v << " : " << edge.weight << endl;
+        }
+    }
+
+
+    //Function to find the busiest parking spot
+    string findNthBusiestPlace(int n)
+    {
+        // Create a vector of pairs (blockCount, place)
+        vector<pair<int, string>> placesWithBlockCount;
+
+        // Add all places and their block count to the vector
+        for(const auto &entry : nodes)
+        {   
+            placesWithBlockCount.push_back({entry.second.blockCount, entry.first});
+        }
+
+        // Sort the vector in descending order based on blockCount
+        sort(placesWithBlockCount.begin(), placesWithBlockCount.end(), greater<pair<int, string>>());
+
+        // Check if n is within the valid range
+        if (n - 1 >= 0 && n - 1 < placesWithBlockCount.size())
+        {
+            return placesWithBlockCount[n - 1].second;
+        }
+        else
+        {
+            cout << "Invalid n value.\n";
+            return "";
+        }
+    }
 };
+
+
 
 //Function to check whether the user has enter correct valid bool value
 bool getBooleanInput(string input1, string input2) 
@@ -529,6 +787,8 @@ bool getBooleanInput(string input1, string input2)
     return input == 1;
 }
 
+
+
 int main(){
     CityGraph city;
     int choice;
@@ -537,14 +797,17 @@ int main(){
         cout<<"\n1-Add Place\n";
         cout<<"2-Connect Places\n";
         cout<<"3-Display city\n";
-        cout<<"4-BFS traversal from any starting place.\n";
-        cout<<"5-Find the nearest parking spot\n";
-        cout<<"6-Check if path exist between two places.\n";
-        cout<<"7-Block or unblock a parking spot.\n";
-        cout<<"8-Sort cities by remaining parking spot.\n";
-        cout<<"9-Search for a city name in descriptions or routes.\n";
-        cout<<"10-Display shortest path between all the points.\n";
-        cout<<"11-Exit\n";
+        cout<<"4-Delete the Places.\n";
+        cout<<"5-BFS traversal from any starting place.\n";
+        cout<<"6-Find the nearest parking spot\n";
+        cout<<"7-Check if path exist between two places.\n";
+        cout<<"8-Block or unblock a parking spot.\n";
+        cout<<"9-Sort cities by remaining parking spot.\n";
+        cout<<"10-Search for a city name in descriptions or routes.\n";
+        cout<<"11-Display shortest path between all the points.\n";
+        cout<<"12-Display the minimum spanning tree.\n";
+        cout<<"13-Find the Nth busiest parking.\n";
+        cout<<"14-Exit\n";
         cout<<"Enter your choice:";
         cin>>choice;
 
@@ -575,6 +838,8 @@ int main(){
                 city.addPlace(name,hasParking,carSpots,bikeSpots);
                 break;
             }
+
+
             case 2:
             {
                 string place1,place2;
@@ -589,12 +854,27 @@ int main(){
                 city.addConnection(place1,place2,distance);
                 break;
             }
+
+
             case 3:
             {
                 city.displayCity();
                 break;
             }
+
+
             case 4:
+            {
+                string cityName;
+                cin.ignore();
+                cout<<"Enter the city name that you want to delete:";
+                getline(cin,cityName);
+                city.deleteCity(cityName);
+                break;
+            }
+
+
+            case 5:
             {
                 string startCity;
                 cin.ignore();
@@ -603,7 +883,9 @@ int main(){
                 city.displayCityBFS(startCity);
                 break;
             }
-            case 5:
+
+
+            case 6:
             {
                 string currentLocation;
                 bool searchCarSpot;
@@ -615,7 +897,9 @@ int main(){
                 city.findNearestParking(currentLocation,searchCarSpot);
                 break;
             }
-            case 6:
+
+
+            case 7:
             {
                 string place1,place2;
                 cin.ignore();
@@ -626,7 +910,9 @@ int main(){
                 city.checkPathExistence(place1,place2);
                 break;
             }
-            case 7:
+
+
+            case 8:
             {
                 string user,place;
                 bool isCarSpot, block;
@@ -642,12 +928,16 @@ int main(){
                 city.blockUnblockParkingSpot(user,place,isCarSpot,block);
                 break;
             }
-            case 8:
+
+
+            case 9:
             {
                 city.sortCitiesByParking();
                 break;
             }
-            case 9:
+
+
+            case 10:
             {
                 string cityName;
                 cin.ignore();
@@ -656,25 +946,45 @@ int main(){
                 city.searchCityName(cityName);
                 break;
             }
-            case 10:
+
+
+            case 11:
             {
                 city.floydWarshall();
                 break;
             }
-            case 11:
+
+
+            case 12:
+            {
+                city.kruskalMST();
+                break;
+            }
+
+
+            case 13:
+            {
+                int N;
+                string busyPlace;
+                cout<<"Enter the value of N:";
+                cin>>N;
+                busyPlace=city.findNthBusiestPlace(N);
+                cout<<"The "<<N<<"th busiest place is "<<busyPlace<<".\n";
+                break;
+            }
+
+
+            case 14:
             {
                 cout<<"Exiting the program...\n";
                 return 0;
             }
+
+
             default:
+            {
                 cout<<"Invalid choice. Please try again\n";
+            }
         }
     }
 }
-/*
-    TO RUN THE CODE
-first execute the below command in termianl
-    g++ -std=c++17 parking.cpp -o parking
-then
-    ./parking
-*/
