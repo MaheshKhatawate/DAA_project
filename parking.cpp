@@ -114,6 +114,9 @@ class CityGraph
     vector<vector<int>> adjMatrix; //This is adjacency matrix
     vector<string> places;
     unordered_map<string ,string> userBlockedSpot;//maps users to place they blocked
+    unordered_map<string, double> userWallets;
+    unordered_map<string, time_t> userBlockTimestamps;
+
 
 
     void resizeMatrix()
@@ -433,8 +436,17 @@ class CityGraph
                 return;
             }
 
+            const double carParkingFee=20.0; //This is the parking fee
+            const double bikeParkingFee=10.0;
+
             if(block)
             {
+                if(userWallets.find(user)==userWallets.end()||userWallets[user]<carParkingFee)
+                {
+                    cout<<"Insufficient balance in "<<user<<"'s wallet. Please add funds.\n";
+                    return;
+                }
+
                 //logic to block the spot
                 if(userBlockedSpot.find(user)!=userBlockedSpot.end())
                 {
@@ -449,7 +461,11 @@ class CityGraph
                         node.blockedCarSpots++;
                         userBlockedSpot[user]=place;
                         node.blockCount++;
-                        cout<<"Car parking spot blocked at "<<place<<" by user "<<user<<".\n";
+
+                        //deduction of the amount from the wallet
+                        userWallets[user]-=carParkingFee;
+                        userBlockTimestamps[user]=time(nullptr);
+                        cout<<"Car parking spot blocked at "<<place<<" by user "<<user<<". Fee deducted: "<<carParkingFee<<".\nRemaining balance: "<<userWallets[user]<<".\n";
                     }
                     else
                     {
@@ -462,8 +478,12 @@ class CityGraph
                     {
                         node.blockedBikeSpots++;
                         userBlockedSpot[user]=place;
+                        userBlockTimestamps[user] = time(nullptr);
                         node.blockCount++;
-                        cout<<"Bike parking spot blocked at "<<place<<" by user "<<user<<".\n";
+                        
+
+                        userWallets[user]-=bikeParkingFee;
+                        cout<<"Bike parking spot blocked at "<<place<<" by user "<<user<<". Fee deducted: "<<bikeParkingFee<<".\nRemaining balance: "<<userWallets[user]<<".\n";
                     }
                     else
                     {
@@ -480,12 +500,32 @@ class CityGraph
                     return;
                 }
 
+
+                //checking for the additional charges
+                time_t currentTime=time(nullptr);
+                double additionalFee=0.0;
+                
+                //change the time to 3600 for charging fees after 1hour
+                if(difftime(currentTime,userBlockTimestamps[user])>5)
+                {
+                    additionalFee=isCarSpot?carParkingFee:bikeParkingFee;
+                    if(userWallets[user]<additionalFee)
+                    {
+                        cout<<"Insufficient balance for additional fee. Unblocking not allowed.\n";
+                        return;
+                    }
+                    userWallets[user]-=additionalFee;
+                    userBlockTimestamps[user]=currentTime;
+                    cout<<"Additional fee of "<<additionalFee<<" deducted for extended parking.\n";
+                }
+
                 if(isCarSpot)
                 {
                     if(node.blockedCarSpots>0)
                     {
                         node.blockedCarSpots--;
                         userBlockedSpot.erase(user);
+                        userBlockTimestamps.erase(user);
                         cout<<"Car parking spot unblocked at "<<place<<" by user "<<user<<".\n";
                     }
                     else
@@ -499,11 +539,12 @@ class CityGraph
                     {
                         node.blockedBikeSpots--;
                         userBlockedSpot.erase(user);
+                        userBlockTimestamps.erase(user);
                         cout<<"Bike parking spot unblocked at "<<place<<" by user "<<user<<".\n";
                     }
                     else
                     {
-                        cout<<"No blocked car parking spots to unblock at "<<place<<".\n";
+                        cout<<"No blocked bike parking spots to unblock at "<<place<<".\n";
                     }
                 }
             }
@@ -770,6 +811,27 @@ class CityGraph
             return "";
         }
     }
+
+
+    //function to manage the wallet of the user
+    void manageWallet(string &user, double amount){
+        if(userWallets.find(user)==userWallets.end()){
+            userWallets[user]=0;
+            cout<<"Wallet was created for the user:"<<user<<".\n";
+        }
+        userWallets[user]+=amount;
+        cout<<"Added "<<amount<<" to "<<user<<"'s wallet.\nCurrent balance: "<<userWallets[user]<<".\n";
+    }
+
+    void checkBalance(string &user){
+        if(userWallets.find(user)==userWallets.end())
+        {
+            cout<<"User: "<<user<<" does not have wallet created.\n";
+            return;
+        }
+
+        cout<<"User: "<<user<<".\nWallet balance: "<<userWallets[user]<<".\n";
+    }
 };
 
 
@@ -801,13 +863,15 @@ int main(){
         cout<<"5-BFS traversal from any starting place.\n";
         cout<<"6-Find the nearest parking spot\n";
         cout<<"7-Check if path exist between two places.\n";
-        cout<<"8-Block or unblock a parking spot.\n";
-        cout<<"9-Sort cities by remaining parking spot.\n";
-        cout<<"10-Search for a city name in descriptions or routes.\n";
-        cout<<"11-Display shortest path between all the points.\n";
-        cout<<"12-Display the minimum spanning tree.\n";
-        cout<<"13-Find the Nth busiest parking.\n";
-        cout<<"14-Exit\n";
+        cout<<"8-Manage wallet.\n";
+        cout<<"9-Check wallet balance.\n";
+        cout<<"10-Block or unblock a parking spot.\n";
+        cout<<"11-Sort cities by remaining parking spot.\n";
+        cout<<"12-Search for a city name in descriptions or routes.\n";
+        cout<<"13-Display shortest path between all the points.\n";
+        cout<<"14-Display the minimum spanning tree.\n";
+        cout<<"15-Find the Nth busiest parking.\n";
+        cout<<"16-Exit\n";
         cout<<"Enter your choice:";
         cin>>choice;
 
@@ -913,6 +977,31 @@ int main(){
 
 
             case 8:
+            {   
+                string user;
+                double amount;
+                cin.ignore();
+                cout<<"Enter your name: ";
+                getline(cin,user);
+                cout<<"Enter the amount you want to deposit: ";
+                cin>>amount;
+                city.manageWallet(user,amount);
+                break;
+            }
+
+
+            case 9:
+            {
+                string user;
+                cin.ignore();
+                cout<<"Enter your name: ";
+                getline(cin,user);
+                city.checkBalance(user);
+                break;
+            }
+
+
+            case 10:
             {
                 string user,place;
                 bool isCarSpot, block;
@@ -930,14 +1019,14 @@ int main(){
             }
 
 
-            case 9:
+            case 11:
             {
                 city.sortCitiesByParking();
                 break;
             }
 
 
-            case 10:
+            case 12:
             {
                 string cityName;
                 cin.ignore();
@@ -948,21 +1037,21 @@ int main(){
             }
 
 
-            case 11:
+            case 13:
             {
                 city.floydWarshall();
                 break;
             }
 
 
-            case 12:
+            case 14:
             {
                 city.kruskalMST();
                 break;
             }
 
 
-            case 13:
+            case 15:
             {
                 int N;
                 string busyPlace;
@@ -973,8 +1062,7 @@ int main(){
                 break;
             }
 
-
-            case 14:
+            case 16:
             {
                 cout<<"Exiting the program...\n";
                 return 0;
